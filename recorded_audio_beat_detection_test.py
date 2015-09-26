@@ -19,52 +19,64 @@ SAMPLE_DURATION = 5
 p = pyaudio.PyAudio()
 inStream = p.open(format=pyaudio.paInt16, channels=NCHANNELS, rate=SAMPLE_RATE, input=True, frames_per_buffer=CHUNKSIZE)
 
-
-
-data = []
-correl=[]
-bpm = 0
-#nsamps = len(samps)
-window_samps = int(SAMPLE_DURATION*SAMPLE_RATE)
-samps_ndx = 0;  #first sample in window_ndx 
-#max_window_ndx = nsamps / window_samps;
-#bpms = numpy.zeros(max_window_ndx)
-
-
-
 frames = [] # A python-list of chunks(numpy.ndarray)
+
 print "Recording ", RECORD_DURATION, "seconds of audio"
-frame = None
-
-
 
 # Start recording
-i = 0
-while True:
-    if i % (SAMPLES_PER_SECOND) == 0: print i / (SAMPLES_PER_SECOND)
+for _ in range(0, int(SAMPLES_PER_SECOND * RECORD_DURATION)):
+    if _ % (SAMPLES_PER_SECOND) == 0: print _ / (SAMPLES_PER_SECOND)
     data = inStream.read(CHUNKSIZE)
-    prevFrame = frame
-    frame = numpy.fromstring(data, dtype=numpy.int16)
-    print frame
+    frames.append(numpy.fromstring(data, dtype=numpy.int16))
 
-    samps,fs = bpm_detector.read_wav(frame)
-    data = samps[0:window_samps]
-    bpm, correl_temp = bpm_detector.bpm_detector(data,fs)
-
-
-    i += 1
-
-#numpydata = numpy.hstack(frames)
+numpydata = numpy.hstack(frames)
 
 
 print "Recording finished, analysing"
 
 
 
+def read_wav(data):
+
+    #open file, get metadata for audio
+    try:
+        wf = data
+    except IOError, e:
+        print e
+        return
+
+    #nsamps = wf.getnframes();
+    nsamps = len(data)
+    assert(nsamps > 0);
+
+    #fs = wf.getframerate()
+    fs = SAMPLE_RATE
+    assert(fs > 0)
+
+    # read entire file and make into an array
+    #samps = list(array.array('i',wf.readframes(nsamps)))
+    samps = data
+    #print 'Read', nsamps,'samples from', filename
+    try:
+        assert(nsamps == len(samps))
+    except AssertionError, e:
+        print  nsamps, "not equal to", len(samps)
+    
+    return samps, SAMPLE_RATE
+
+samps,fs = read_wav(numpydata)
 
 
 
 
+data = []
+correl=[]
+bpm = 0
+nsamps = len(samps)
+window_samps = int(SAMPLE_DURATION*SAMPLE_RATE)
+samps_ndx = 0;  #first sample in window_ndx 
+max_window_ndx = nsamps / window_samps;
+bpms = numpy.zeros(max_window_ndx)
 
 #iterate through all windows
 for window_ndx in xrange(1,max_window_ndx):

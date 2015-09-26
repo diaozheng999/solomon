@@ -2,6 +2,39 @@ import pywt, numpy
 from scipy import signal
 import matplotlib.pyplot as plt
 
+SAMPLE_RATE = 44100
+
+
+
+def read_wav(data):
+
+    #open file, get metadata for audio
+    try:
+        wf = data
+    except IOError, e:
+        print e
+        return
+
+    #nsamps = wf.getnframes();
+    nsamps = len(data)
+    assert(nsamps > 0);
+
+    #fs = wf.getframerate()
+    fs = SAMPLE_RATE
+    assert(fs > 0)
+
+    # read entire file and make into an array
+    #samps = list(array.array('i',wf.readframes(nsamps)))
+    samps = data
+    #print 'Read', nsamps,'samples from', filename
+    try:
+        assert(nsamps == len(samps))
+    except AssertionError, e:
+        print  nsamps, "not equal to", len(samps)
+    
+    return samps, SAMPLE_RATE
+
+
 
 def bpm_detector(data,fs):
     cA = [] 
