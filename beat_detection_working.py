@@ -142,7 +142,7 @@ def main(filename, window):
     time.sleep(10);
     plt.close();
 
-main('04 Your Grace Is Enough.wav', 5)
+main('grace_enough.wav', 2)
 
 
 
