@@ -2,7 +2,7 @@ import pywt, numpy
 from scipy import signal
 import matplotlib.pyplot as plt
 
-SAMPLE_RATE = 44100
+SAMPLE_RATE = 48000
 
 
 

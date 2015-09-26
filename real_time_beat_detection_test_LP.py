@@ -7,11 +7,13 @@ import pyaudio
 import bpm_detector
 
 SAMPLE_RATE = 48000
-RECORD_DURATION = 10 # Seconds
+#RECORD_DURATION = 5 # Seconds
 CHUNKSIZE = 1000
 NCHANNELS = 1
 SAMPLES_PER_SECOND = SAMPLE_RATE/CHUNKSIZE
 SAMPLE_DURATION = 5
+WINDOW = 2.2
+
 
 
 # Setup stuff
@@ -24,15 +26,14 @@ data = []
 correl=[]
 bpm = 0
 #nsamps = len(samps)
-window_samps = int(SAMPLE_DURATION*SAMPLE_RATE)
+window_samps = int(WINDOW*SAMPLE_RATE)
 samps_ndx = 0;  #first sample in window_ndx 
-#max_window_ndx = nsamps / window_samps;
 #bpms = numpy.zeros(max_window_ndx)
 
 
 
 frames = [] # A python-list of chunks(numpy.ndarray)
-print "Recording "#, RECORD_DURATION, "seconds of audio"
+print "Recording..."#, RECORD_DURATION, "seconds of audio"
 frame = None
 
 
@@ -40,22 +41,60 @@ frame = None
 # Start recording
 i = 0
 n = 20
+
+allbpm = []
+
 while True and n > 0:
-    if i % (SAMPLES_PER_SECOND) == 0: print i / (SAMPLES_PER_SECOND),
+    if i % (SAMPLES_PER_SECOND) == 0: 
+        print i / (SAMPLES_PER_SECOND),
 
     data = inStream.read(CHUNKSIZE)
 
     frame = numpy.fromstring(data, dtype=numpy.int16)
     frames.append(frame)
     #print frame
-
-    if i % (SAMPLES_PER_SECOND * SAMPLE_DURATION) == 0 and i > 0:
+    if i % (48*5) == 0 and i > 0:
         print
         numpydata = numpy.hstack(frames)
 
         samps,fs = bpm_detector.read_wav(numpydata)
-        #data = samps[0:window_samps]
-        bpm, correl_temp = bpm_detector.bpm_detector(samps,fs)
+        nsamps = len(samps)
+        max_window_ndx = nsamps / window_samps;
+        bpm = 0
+        bpms = numpy.zeros(max_window_ndx)
+
+        for window_ndx in xrange(1,max_window_ndx):
+            print window_ndx
+            bpm, correl_temp = bpm_detector.bpm_detector(samps,fs)
+
+            if bpm == []:
+                continue
+            bpms[window_ndx] = bpm
+
+        print bpms
+        copybpm = []
+        aveSoFar = None
+        total = 0
+        num = 0
+
+        for elem in bpms:
+            if elem == 0.0 or (aveSoFar != None and abs(elem - aveSoFar) >= 20):
+                print 'removed', elem
+            if elem != 0.0 and (aveSoFar == None) or (aveSoFar != None and abs(elem - aveSoFar) < 20):
+                total += elem
+                num += 1
+                copybpm.append(elem)
+                aveSoFar = total/float(num)
+
+        bpm = sum(copybpm)/float(len(copybpm))
+
+        allbpm.append(bpm)
+        allbpm = sum(allbpm)/float(len(allbpm))
+    
+        print 'Completed.  Estimated Beats Per Minute:', bpm
+
+        print 'Completed.  Overall Beats', allbpm
+
 
         # Reset stuff
         frames = []
